@@ -1,6 +1,7 @@
 #include "SDL.h"
 #include "sys.h"
 #include "game.h"
+#include "sys/param.h"
 
 #define BASEWIDTH	640
 #define BASEHEIGHT	480
@@ -19,11 +20,12 @@ void Vid_Init ()
 	SDL_ShowCursor(0);
 }
 
-void Vid_Update (void * buffer, uint width, uint height)
+void Vid_Update (void * buffer, uint size)
 {
 	SDL_LockSurface(screen);
-	memcpy( screen->pixels, buffer, screen->format->BytesPerPixel*width*height);
-	SDL_unlockSurface(screen);
+	memcpy(screen->pixels, buffer, size);
+	SDL_UnlockSurface(screen);
+	SDL_UpdateRect(screen, 0, 0, 0, 0);
 }
 
 void Vid_Shutdown ()

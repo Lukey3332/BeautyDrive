@@ -4,6 +4,7 @@
 #include "vid.h"
 
 static GstElement* app_sink;
+static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp);
 
 void Dec_Init ()
 {
@@ -16,14 +17,15 @@ void Dec_LoadBackground (const char * url)
 	GstElement* source;
 	if (url == NULL) {
 		// Using the "video test source"
+		Sys_Printf("Using debug Video Source");
 		source = gst_element_factory_make ("videotestsrc", "source");
-		g_object_set (source, "pattern", 0, NULL);
+		g_object_set (source, "pattern", 18, NULL);
 	} else {
 		// Using an actual video file
 		source = gst_element_factory_make ("uridecodebin", "source");
 		// Warning: the URI must be absolute.
 		g_object_set(source, "uri", url, NULL);
-  		g_signal_connect (source, "pad-added", G_CALLBACK (pad_added_handler), NULL);
+		g_signal_connect (source, "pad-added", G_CALLBACK (pad_added_handler), NULL);
 	}
 	
 	if (source == NULL) {
@@ -34,6 +36,10 @@ void Dec_LoadBackground (const char * url)
 	}
 	
 	app_sink = gst_element_factory_make ("appsink", "app_sink");
+	
+	gst_app_sink_set_caps(app_sink, gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "RGB", NULL));
+	gst_base_sink_set_sync(app_sink, FALSE);
+	gst_app_sink_set_max_buffers(app_sink, 20);
 	
 	if (app_sink == NULL) {
 		Sys_Error("Unable to create sink element.\n");
@@ -55,12 +61,51 @@ void Dec_LoadBackground (const char * url)
 	}
 }
 
+void Dec_DrawBackground ()
+{
+	GstSample* sample;
+retry:
+	sample = gst_app_sink_pull_sample(app_sink);
+	if(!sample) {
+		// Finished playing.
+		if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH,
+			GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE))
+		{
+			Sys_Error("Seek failed!\n");
+		}
+		goto retry;
+	}
+
+	// Get the frame format.
+	GstCaps * caps = gst_sample_get_caps (sample);
+	if (!caps) {
+		Sys_Error("could not get snapshot format\n");
+	}
+	
+	gint width, height, bpp;
+	GstStructure * s = gst_caps_get_structure (caps, 0);
+	int res = gst_structure_get_int (s, "width", &width)
+		| gst_structure_get_int (s, "height", &height)
+		| gst_structure_get_int (s, "bpp", &bpp);
+	if (!res) {
+		Sys_Error("could not get snapshot dimension\n");
+	}
+	GstBuffer * buffer = gst_sample_get_buffer(sample);
+	GstMapInfo data;
+	gst_buffer_map (buffer, &data, GST_MAP_READ);
+	Vid_Update(data.data, data.size);
+	gst_buffer_unmap (buffer, &data); 
+	
+	gst_sample_unref(sample);
+}
+
 void Dec_Shutdown ()
 {
 	
 }
 
-static void pad_added_handler (GstElement *src, GstPad *new_pad, void *) {
+static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp)
+{
 	GstPadLinkReturn ret;
 	GstCaps *new_pad_caps = NULL;
 	GstStructure *new_pad_struct = NULL;
@@ -69,7 +114,7 @@ static void pad_added_handler (GstElement *src, GstPad *new_pad, void *) {
 	g_print ("Received new pad '%s' from '%s':\n", GST_PAD_NAME (new_pad), GST_ELEMENT_NAME (src));
 
 	/* Check the new pad's type */
-	new_pad_caps = gst_pad_get_caps (new_pad);
+	new_pad_caps = gst_pad_get_current_caps (new_pad);
 	new_pad_struct = gst_caps_get_structure (new_pad_caps, 0);
 	new_pad_type = gst_structure_get_name (new_pad_struct);
 	
@@ -78,18 +123,18 @@ static void pad_added_handler (GstElement *src, GstPad *new_pad, void *) {
 	{
 		/* Attempt the link */
 		GstPad *sink_pad_video = gst_element_get_static_pad (app_sink, "sink");
-    	ret = gst_pad_link (new_pad, sink_pad_video);
-    	if (GST_PAD_LINK_FAILED (ret)) {
-      		g_print ("  Type is '%s' but link failed.\n", new_pad_type);
-    	} else {
-      		g_print ("  Link succeeded (type '%s').\n", new_pad_type);
-    	} 
-
-  		/* Unreference the sink pad */
+		ret = gst_pad_link (new_pad, sink_pad_video);
+		if (GST_PAD_LINK_FAILED (ret)) {
+			g_print ("  Type is '%s' but link failed.\n", new_pad_type);
+		} else {
+			g_print ("  Link succeeded (type '%s').\n", new_pad_type);
+		} 
+		
+		/* Unreference the sink pad */
 		gst_object_unref (sink_pad_video);
-  	} else {
-    	g_print ("  It has type '%s' which is not raw audio. Ignoring.\n", new_pad_type);
-    	gst_caps_unref (new_pad_caps);
-  	}
+	} else {
+		g_print ("  It has type '%s' which is not raw audio. Ignoring.\n", new_pad_type);
+		gst_caps_unref (new_pad_caps);
+	}
 
 }

@@ -1,7 +1,7 @@
 CC=gcc
-CFLAGS=-I. `pkg-config --cflags gstreamer-1.0` `sdl-config --cflags`
+CFLAGS=-I. -g -O2 `pkg-config --cflags gstreamer-1.0` `sdl-config --cflags`
 
-LIBS=`pkg-config --libs gstreamer-1.0` `sdl-config --libs`
+LIBS=-lm `pkg-config --libs gstreamer-1.0` `pkg-config --libs gstreamer-app-1.0` `sdl-config --libs`
 
 %.o: %.c *.h
 	$(CC) -c -o $@ $< $(CFLAGS)
