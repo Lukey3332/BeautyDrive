@@ -19,6 +19,11 @@ void Vid_Init ()
 	SDL_ShowCursor(0);
 }
 
+void Vid_Update (void * buffer, uint width, uint height)
+{
+	
+}
+
 void Vid_Shutdown ()
 {
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);

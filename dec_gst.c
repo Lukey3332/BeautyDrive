@@ -1,4 +1,5 @@
 #include <gst/gst.h>
+#include <gst/app/gstappsink.h>
 #include "sys.h"
 
 void Dec_Init ()

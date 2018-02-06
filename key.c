@@ -34,5 +34,21 @@ void HandleKey (uint keycode, char down)
 	switch(tmp->command) {
 		case CMD_QUIT:
 			Sys_Quit();
+			break;
+		case CMD_ACCEL:
+			if(down)
+				speed = 1.0;
+			else
+				if(speed == 1.0)
+					speed = 0;
+			break;
+		case CMD_BRAKE:
+			if(down)
+				speed = -1.0;
+			else
+				if(speed == -1.0)
+					speed = 0;
+			break;
+			
 	}
 }

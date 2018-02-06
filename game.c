@@ -16,6 +16,7 @@ void Game_Init ()
 void Game_Frame ()
 {
 	In_SendEvents();
+	
 }
 
 void Game_Shutdown ()
