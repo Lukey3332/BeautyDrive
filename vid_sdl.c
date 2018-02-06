@@ -5,7 +5,7 @@
 #define BASEWIDTH	640
 #define BASEHEIGHT	480
 
-static SDL_Surface *screen;
+static SDL_Surface * screen;
 
 void Vid_Init ()
 {
@@ -21,7 +21,9 @@ void Vid_Init ()
 
 void Vid_Update (void * buffer, uint width, uint height)
 {
-	
+	SDL_LockSurface(screen);
+	memcpy( screen->pixels, buffer, screen->format->BytesPerPixel*width*height);
+	SDL_unlockSurface(screen);
 }
 
 void Vid_Shutdown ()
