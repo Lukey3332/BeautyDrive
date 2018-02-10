@@ -1,10 +1,12 @@
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
+#include <string.h>
 #include "sys.h"
 #include "vid.h"
 
 static GstElement* app_sink;
 static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp);
+static Vid_SurfaceRef background_surf;
 
 void Dec_Init ()
 {
@@ -37,9 +39,8 @@ void Dec_LoadBackground (const char * url)
 	
 	app_sink = gst_element_factory_make ("appsink", "app_sink");
 	
-	gst_app_sink_set_caps(app_sink, gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "RGB", NULL));
-	gst_base_sink_set_sync(app_sink, FALSE);
-	gst_app_sink_set_max_buffers(app_sink, 20);
+	gst_app_sink_set_max_buffers( (GstAppSink*)app_sink, 5);
+	gst_base_sink_set_sync( (GstBaseSink *)app_sink, FALSE);
 	
 	if (app_sink == NULL) {
 		Sys_Error("Unable to create sink element.\n");
@@ -48,8 +49,7 @@ void Dec_LoadBackground (const char * url)
 		Sys_Error("Unable to add sink element to the pipeline.\n");
 	}
 	
-	if (url == NULL)
-	{
+	if (url == NULL) {
 		// Using the "videotestsrc" - static connection
 		if (!gst_element_link(source, (GstElement*)app_sink)) {
 			Sys_Error("Unable to link the source to the sink.\n");
@@ -59,42 +59,48 @@ void Dec_LoadBackground (const char * url)
 	if (gst_element_set_state(pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
 		Sys_Error("Unable to set the pipeline to the playing state.\n");
 	}
-}
-
-void Dec_DrawBackground ()
-{
-	GstSample* sample;
-retry:
-	sample = gst_app_sink_pull_sample(app_sink);
-	if(!sample) {
-		// Finished playing.
-		if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH,
-			GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE))
-		{
-			Sys_Error("Seek failed!\n");
-		}
-		goto retry;
-	}
-
+	
+	GstSample* sample = gst_app_sink_pull_sample((GstAppSink*)app_sink);
+	
 	// Get the frame format.
 	GstCaps * caps = gst_sample_get_caps (sample);
 	if (!caps) {
 		Sys_Error("could not get snapshot format\n");
 	}
 	
-	gint width, height, bpp;
+	gint width, height;
 	GstStructure * s = gst_caps_get_structure (caps, 0);
 	int res = gst_structure_get_int (s, "width", &width)
-		| gst_structure_get_int (s, "height", &height)
-		| gst_structure_get_int (s, "bpp", &bpp);
+		| gst_structure_get_int (s, "height", &height);
 	if (!res) {
 		Sys_Error("could not get snapshot dimension\n");
 	}
-	GstBuffer * buffer = gst_sample_get_buffer(sample);
+	background_surf = Vid_CreateSurface(width, height, YUV);
+	
+	gst_sample_unref(sample);
+}
+
+void Dec_DrawBackground ()
+{
+	GstSample* sample;
+retry:
+	sample = gst_app_sink_pull_sample((GstAppSink*)app_sink);
+	if(!sample) {
+		// Finished playing.
+		if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH,
+			GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
+			Sys_Error("Seek failed!\n");
+		}
+		goto retry;
+	}
+	
+	GstBuffer * vid_buffer = gst_sample_get_buffer(sample);
 	GstMapInfo data;
-	gst_buffer_map (buffer, &data, GST_MAP_READ);
-	Vid_Update(data.data, data.size);
-	gst_buffer_unmap (buffer, &data); 
+	gst_buffer_map (vid_buffer, &data, GST_MAP_READ);
+	void * dest_buffer = Vid_GetAndLockBuffer(background_surf);
+	memcpy( dest_buffer, data.data, data.size);
+	Vid_UnlockBuffer(background_surf);
+	gst_buffer_unmap (vid_buffer, &data); 
 	
 	gst_sample_unref(sample);
 }
@@ -136,5 +142,5 @@ static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp)
 		g_print ("  It has type '%s' which is not raw audio. Ignoring.\n", new_pad_type);
 		gst_caps_unref (new_pad_caps);
 	}
-
 }
+

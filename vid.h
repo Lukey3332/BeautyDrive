@@ -1,3 +1,10 @@
+#include "util.h"
+typedef enum { RGB, YUV } Vid_SurfaceType;
+typedef uint Vid_SurfaceRef;
+
 void Vid_Init ();
-void Vid_Update (void * buffer, uint size);
+Vid_SurfaceRef Vid_CreateSurface (uint width, uint height, Vid_SurfaceType type);
+void * Vid_GetAndLockBuffer (Vid_SurfaceRef ref);
+void Vid_UnlockBuffer (Vid_SurfaceRef ref);
+void Vid_Update ();
 void Vid_Shutdown ();

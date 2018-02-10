@@ -28,6 +28,16 @@ void Sys_Error (char *fmt, ...)
 	exit(1);
 }
 
+void Sys_Sleep (uint n)
+{
+	SDL_Delay(n);
+}
+
+uint Sys_Time()
+{
+	return SDL_GetTicks();
+}
+
 void Sys_Init ()
 {
 	SDL_Init(0);

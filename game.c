@@ -1,10 +1,13 @@
 // game.c
 #include "sys.h"
 #include "dec.h"
+#include "vid.h"
 #include "key.h"
 #include "game.h"
 #include "SDL.h"
 #include "in.h"
+
+static uint prevtime; //Time of the previous run
 
 void Game_Init ()
 {
@@ -17,12 +20,17 @@ void Game_Init ()
 		Dec_LoadBackground(sys_params.argv[1]);
 	else
 		Dec_LoadBackground(NULL);
+	Dec_DrawBackground();
 }
 
 void Game_Frame ()
 {
+	Sys_Sleep( 16-(prevtime-Sys_Time()) );
 	In_SendEvents();
-	Dec_DrawBackground();
+	if(speed)
+		Dec_DrawBackground();
+	Vid_Update();
+	prevtime = Sys_Time();
 }
 
 void Game_Shutdown ()
