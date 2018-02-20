@@ -21,7 +21,7 @@ void Dec_LoadBackground (const char * url)
 		// Using the "video test source"
 		Sys_Printf("Using debug Video Source");
 		source = gst_element_factory_make ("videotestsrc", "source");
-		g_object_set (source, "pattern", 18, NULL);
+		//g_object_set (source, "pattern", 18, NULL);
 	} else {
 		// Using an actual video file
 		source = gst_element_factory_make ("uridecodebin", "source");
@@ -100,6 +100,7 @@ retry:
 	void * dest_buffer = Vid_GetAndLockBuffer(background_surf);
 	memcpy( dest_buffer, data.data, data.size);
 	Vid_UnlockBuffer(background_surf);
+	Vid_UpdateBuffer(background_surf, 0, 0);
 	gst_buffer_unmap (vid_buffer, &data); 
 	
 	gst_sample_unref(sample);

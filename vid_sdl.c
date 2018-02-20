@@ -12,12 +12,12 @@
 #define rmask 0xff000000
 #define gmask 0x00ff0000
 #define bmask 0x0000ff00
-#define amask 0x000000ff
+#define amask 0x00000000
 #else
 #define rmask 0x000000ff
 #define gmask 0x0000ff00
 #define bmask 0x00ff0000
-#define amask 0xff000000
+#define amask 0x00000000
 #endif
 
 struct {
@@ -55,7 +55,8 @@ Vid_SurfaceRef Vid_CreateSurface (uint width, uint height, Vid_SurfaceType type)
 	switch (type) {
 		case RGB:
 			surfaces.surface[count].type = RGB;
-			surfaces.surface[count].ptr.rgb = SDL_CreateRGBSurface(0, width, height, BASEDEPTH, rmask, gmask, bmask, amask);
+			surfaces.surface[count].ptr.rgb = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, BASEDEPTH, rmask, gmask, bmask, amask);
+			
 			return count;
 		case YUV:
 			surfaces.surface[count].type = YUV;
@@ -91,13 +92,29 @@ void Vid_UnlockBuffer (Vid_SurfaceRef ref) {
 		case YUV:
 			tmplay = surfaces.surface[ref].ptr.yuv;
 			SDL_UnlockYUVOverlay(tmplay);
-			SDL_Rect target = { 0, 0, BASEWIDTH, BASEHEIGHT};
-			SDL_DisplayYUVOverlay(tmplay, &target);
 			return;
 	}
 }
 
-void Vid_Update (void * buffer, uint size)
+void Vid_UpdateBuffer(Vid_SurfaceRef ref, uint x, uint y) {
+	SDL_Surface * tmpsurf;
+	SDL_Overlay * tmplay;
+	switch (surfaces.surface[ref].type) {
+		case RGB:
+			tmpsurf = surfaces.surface[ref].ptr.rgb;
+			//SDL_Rect source = { 0, 0, tmpsurf->w, tmpsurf->h};
+			SDL_Rect target = { x, y, tmpsurf->w, tmpsurf->h};
+			SDL_BlitSurface(tmpsurf, NULL, screen, &target);
+			return;
+		case YUV:
+			tmplay = surfaces.surface[ref].ptr.yuv;
+			SDL_Rect overlaytarget = { x, y, tmplay->w, tmplay->h};
+			SDL_DisplayYUVOverlay(tmplay, &overlaytarget);
+			return;
+	}
+}
+
+void Vid_Update ()
 {
 	SDL_UpdateRect(screen, 0, 0, 0, 0);
 }

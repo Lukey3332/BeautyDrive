@@ -49,6 +49,19 @@ void HandleKey (uint keycode, char down)
 				if(speed == -1.0)
 					speed = 0;
 			break;
-			
+		case CMD_LEFT:
+			if(down)
+				steer = -1.0;
+			else
+				if(steer == -1.0)
+					steer = 0;
+			break;	
+		case CMD_RIGHT:
+		if(down)
+				steer = 1.0;
+			else
+				if(steer == 1.0)
+					steer = 0;
+			break;
 	}
 }

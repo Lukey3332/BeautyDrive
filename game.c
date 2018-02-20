@@ -1,13 +1,16 @@
 // game.c
 #include "sys.h"
 #include "dec.h"
-#include "vid.h"
 #include "key.h"
+#include "util.h"
 #include "game.h"
+#include "vid.h"
 #include "SDL.h"
 #include "in.h"
 
 static uint prevtime; //Time of the previous run
+Vid_SurfaceRef car;
+uint carx, cary = 0;
 
 void Game_Init ()
 {
@@ -20,15 +23,25 @@ void Game_Init ()
 		Dec_LoadBackground(sys_params.argv[1]);
 	else
 		Dec_LoadBackground(NULL);
-	Dec_DrawBackground();
+	car = Vid_CreateSurface( 10, 20, RGB);
+	memset(Vid_GetAndLockBuffer(car), 0xff, 10*20*3);
+	Vid_UnlockBuffer(car);
+	prevtime = Sys_Time();
 }
 
 void Game_Frame ()
 {
-	Sys_Sleep( 16-(prevtime-Sys_Time()) );
+	Sys_Sleep( (uint) MAX( (int) (33-(Sys_Time()-prevtime)), (int) 0) );
+	prevtime = Sys_Time();
 	In_SendEvents();
-	if(speed)
+	cary += steer;
+	
+	memset(Vid_GetAndLockBuffer(0), 0x00, 640*480*3);
+	Vid_UnlockBuffer(0);
+	if(speed) {
 		Dec_DrawBackground();
+	}
+	Vid_UpdateBuffer(car, cary, 40);
 	Vid_Update();
 	prevtime = Sys_Time();
 }
