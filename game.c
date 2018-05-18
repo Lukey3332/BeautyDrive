@@ -9,7 +9,7 @@
 #include "in.h"
 
 static uint prevtime; //Time of the previous run
-Vid_SurfaceRef car;
+void * car;
 uint carx, cary = 0;
 
 void Game_Init ()
@@ -23,9 +23,9 @@ void Game_Init ()
 		Dec_LoadBackground(sys_params.argv[1]);
 	else
 		Dec_LoadBackground(NULL);
-	car = Vid_CreateSurface( 10, 20, RGB);
-	memset(Vid_GetAndLockBuffer(car), 0xff, 10*20*3);
-	Vid_UnlockBuffer(car);
+	car = Vid_CreateRGBSurface( 10, 20);
+	memset(Vid_GetAndLockRGBBuffer(car), 0xff, 10*20*3);
+	Vid_UnlockRGBBuffer(car);
 	prevtime = Sys_Time();
 }
 
@@ -36,12 +36,11 @@ void Game_Frame ()
 	In_SendEvents();
 	cary += steer;
 	
-	memset(Vid_GetAndLockBuffer(0), 0x00, 640*480*3);
-	Vid_UnlockBuffer(0);
+	Vid_Blank();
 	if(speed) {
 		Dec_DrawBackground();
 	}
-	Vid_UpdateBuffer(car, cary, 40);
+	Vid_UpdateRGBBuffer(car, cary, 40);
 	Vid_Update();
 	prevtime = Sys_Time();
 }

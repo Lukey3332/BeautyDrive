@@ -6,7 +6,7 @@
 
 static GstElement* app_sink;
 static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp);
-static Vid_SurfaceRef background_surf;
+static void * background_surf;
 
 void Dec_Init ()
 {
@@ -75,7 +75,7 @@ void Dec_LoadBackground (const char * url)
 	if (!res) {
 		Sys_Error("could not get snapshot dimension\n");
 	}
-	background_surf = Vid_CreateSurface(width, height, YUV);
+	background_surf = Vid_CreateYUVSurface(width, height);
 	
 	gst_sample_unref(sample);
 }
@@ -97,10 +97,10 @@ retry:
 	GstBuffer * vid_buffer = gst_sample_get_buffer(sample);
 	GstMapInfo data;
 	gst_buffer_map (vid_buffer, &data, GST_MAP_READ);
-	void * dest_buffer = Vid_GetAndLockBuffer(background_surf);
+	void * dest_buffer = Vid_GetAndLockYUVBuffer(background_surf);
 	memcpy( dest_buffer, data.data, data.size);
-	Vid_UnlockBuffer(background_surf);
-	Vid_UpdateBuffer(background_surf, 0, 0);
+	Vid_UnlockYUVBuffer(background_surf);
+	Vid_UpdateYUVBuffer(background_surf, 0, 0);
 	gst_buffer_unmap (vid_buffer, &data); 
 	
 	gst_sample_unref(sample);
