@@ -1,0 +1,15 @@
+CC=gcc
+CFLAGS=-I. -g -O2 `pkg-config --cflags gstreamer-1.0` `pkg-config --cflags sdl2`
+
+LIBS=-lm `pkg-config --libs gstreamer-1.0` `pkg-config --libs gstreamer-app-1.0` `pkg-config --libs sdl2`
+
+%.o: %.c *.h
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+BeautyDrive: sys_sdl2.o vid_sdl2.o dec_gst.o in_sdl.o game.o key.o
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
+
+clean:
+	rm -f *.o core

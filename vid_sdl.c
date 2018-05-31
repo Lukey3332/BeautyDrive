@@ -70,7 +70,7 @@ void Vid_UnlockYUVBuffer (void * ref)
 	SDL_UnlockYUVOverlay(tmp);
 }
 
-void Vid_UpdateRGBBuffer(void * ref, uint x, uint y)
+void Vid_BlitRGBBuffer(void * ref, uint x, uint y)
 {
 	SDL_Surface * tmp = ref;
 	//SDL_Rect source = { 0, 0, tmpsurf->w, tmpsurf->h};
@@ -78,11 +78,10 @@ void Vid_UpdateRGBBuffer(void * ref, uint x, uint y)
 	SDL_BlitSurface(tmp, NULL, screen, &target);
 }
 
-void Vid_UpdateYUVBuffer(void * ref, uint x, uint y)
+void Vid_BlitYUVBuffer(void * ref, uint x, uint y)
 {
 	SDL_Overlay * tmp = ref;
 	SDL_Rect overlaytarget = { x, y, tmp->w, tmp->h};
-	SDL_DisplayYUVOverlay(tmp, &overlaytarget);
 	SDL_DisplayYUVOverlay(tmp, &overlaytarget);
 }
 

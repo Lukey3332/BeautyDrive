@@ -23,7 +23,7 @@ void Game_Init ()
 		Dec_LoadBackground(sys_params.argv[1]);
 	else
 		Dec_LoadBackground(NULL);
-	car = Vid_CreateRGBSurface( 10, 20);
+	car = Vid_CreateRGBSurface( 10, 20, STREAMING);
 	memset(Vid_GetAndLockRGBBuffer(car), 0xff, 10*20*3);
 	Vid_UnlockRGBBuffer(car);
 	prevtime = Sys_Time();
@@ -40,7 +40,7 @@ void Game_Frame ()
 	if(speed) {
 		Dec_DrawBackground();
 	}
-	Vid_UpdateRGBBuffer(car, cary, 40);
+	Vid_BlitRGBBuffer(car, cary, 40);
 	Vid_Update();
 	prevtime = Sys_Time();
 }

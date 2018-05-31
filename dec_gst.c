@@ -75,7 +75,7 @@ void Dec_LoadBackground (const char * url)
 	if (!res) {
 		Sys_Error("could not get snapshot dimension\n");
 	}
-	background_surf = Vid_CreateYUVSurface(width, height);
+	background_surf = Vid_CreateYUVSurface(width, height, STREAMING);
 	
 	gst_sample_unref(sample);
 }
@@ -100,7 +100,7 @@ retry:
 	void * dest_buffer = Vid_GetAndLockYUVBuffer(background_surf);
 	memcpy( dest_buffer, data.data, data.size);
 	Vid_UnlockYUVBuffer(background_surf);
-	Vid_UpdateYUVBuffer(background_surf, 0, 0);
+	Vid_BlitYUVBuffer(background_surf, 0, 0);
 	gst_buffer_unmap (vid_buffer, &data); 
 	
 	gst_sample_unref(sample);
