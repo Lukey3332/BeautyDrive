@@ -7,8 +7,10 @@
 #include "vid.h"
 #include "SDL.h"
 #include "in.h"
+#include "map.h"
 
 static uint prevtime; //Time of the previous run
+static int prevspeed = 1;
 void * car;
 uint carx, cary = 0;
 
@@ -19,13 +21,14 @@ void Game_Init ()
 	map_key(SDLK_ESCAPE, CMD_QUIT);
 	map_key(SDLK_LEFT, CMD_LEFT);
 	map_key(SDLK_RIGHT, CMD_RIGHT);
-	if(sys_params.argc==2)
-		Dec_LoadBackground(sys_params.argv[1]);
+	Map_Load("../BeautyDrive-data/candy.obj");
+	if(Sys_Args.argc==2)
+		Dec_LoadBackground(Sys_Args.argv[1]);
 	else
 		Dec_LoadBackground(NULL);
 	car = Vid_CreateRGBSurface( 10, 20, STREAMING);
-	memset(Vid_GetAndLockRGBBuffer(car), 0xff, 10*20*3);
-	Vid_UnlockRGBBuffer(car);
+	//memset(Vid_GetAndLockRGBBuffer(car), 0xff, 10*20*3);
+	//Vid_UnlockRGBBuffer(car);
 	prevtime = Sys_Time();
 }
 
@@ -38,11 +41,17 @@ void Game_Frame ()
 	
 	Vid_Blank();
 	if(speed) {
-		Dec_DrawBackground();
+		if(speed != prevspeed) {
+			Dec_Seek( DIRECTION, speed);
+			prevspeed = speed;
+		}
+
+		if(Dec_Advance())
+			Dec_Seek( REWIND, 0);
 	}
-	Vid_BlitRGBBuffer(car, cary, 40);
+	Dec_DrawBackground();
+	Vid_BlitRGBBuffer(car, cary, 400);
 	Vid_Update();
-	prevtime = Sys_Time();
 }
 
 void Game_Shutdown ()

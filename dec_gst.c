@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include "dec.h"
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 #include <string.h>
@@ -10,7 +12,7 @@ static void * background_surf;
 
 void Dec_Init ()
 {
-	gst_init (&sys_params.argc, &sys_params.argv);
+	gst_init (&Sys_Args.argc, &Sys_Args.argv);
 }
 
 void Dec_LoadBackground (const char * url)
@@ -21,7 +23,7 @@ void Dec_LoadBackground (const char * url)
 		// Using the "video test source"
 		Sys_Printf("Using debug Video Source");
 		source = gst_element_factory_make ("videotestsrc", "source");
-		//g_object_set (source, "pattern", 18, NULL);
+		g_object_set (source, "pattern", 18, NULL);
 	} else {
 		// Using an actual video file
 		source = gst_element_factory_make ("uridecodebin", "source");
@@ -82,17 +84,46 @@ void Dec_LoadBackground (const char * url)
 
 void Dec_DrawBackground ()
 {
-	GstSample* sample;
-retry:
-	sample = gst_app_sink_pull_sample((GstAppSink*)app_sink);
-	if(!sample) {
-		// Finished playing.
-		if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH,
+	Vid_BlitYUVBuffer(background_surf, 0, 0);
+}
+
+int Dec_Seek (seekT type, int pos)
+{
+	gint64 current;
+	switch(type) {
+		case REWIND:
+			if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH,
 			GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
-			Sys_Error("Seek failed!\n");
-		}
-		goto retry;
+				Sys_Error("Seek failed!\n");
+				return 1;
+			}
+		break;
+		
+		case SEEK:
+			if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH,
+			GST_SEEK_TYPE_SET, pos, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
+				Sys_Error("Seek failed!\n");
+				return 1;
+			}
+		break;
+		
+		case DIRECTION:
+			gst_element_query_position (app_sink, GST_FORMAT_DEFAULT, &current);
+			if (!gst_element_seek(app_sink, pos, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH,
+			GST_SEEK_TYPE_SET, current, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
+				Sys_Error("Seek failed!\n");
+				return 1;
+			}
+		break;
 	}
+	return 0;
+}
+
+int Dec_Advance ()
+{
+	GstSample* sample = gst_app_sink_pull_sample((GstAppSink*)app_sink);
+	
+	if(!sample) return 1;
 	
 	GstBuffer * vid_buffer = gst_sample_get_buffer(sample);
 	GstMapInfo data;
@@ -100,10 +131,10 @@ retry:
 	void * dest_buffer = Vid_GetAndLockYUVBuffer(background_surf);
 	memcpy( dest_buffer, data.data, data.size);
 	Vid_UnlockYUVBuffer(background_surf);
-	Vid_BlitYUVBuffer(background_surf, 0, 0);
 	gst_buffer_unmap (vid_buffer, &data); 
 	
 	gst_sample_unref(sample);
+	return 0;
 }
 
 void Dec_Shutdown ()

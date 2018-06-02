@@ -34,12 +34,12 @@ void Vid_Init ()
 	SDL_ShowCursor(0);
 }
 
-void * Vid_CreateRGBSurface (uint width, uint height)
+void * Vid_CreateRGBSurface (uint width, uint height, int update)
 {
 	return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, BASEDEPTH, rmask, gmask, bmask, amask);
 }
 
-void * Vid_CreateYUVSurface (uint width, uint height)
+void * Vid_CreateYUVSurface (uint width, uint height, int update)
 {
 	return SDL_CreateYUVOverlay(width, height, SDL_IYUV_OVERLAY, screen);
 }
