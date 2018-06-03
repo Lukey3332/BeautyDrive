@@ -10,7 +10,7 @@
 DYN_T( vectorT, tmpVecs )
 mapT map;
 
-void LoadTrack ( void * fd, trackT * track )
+static void LoadTrack ( void * fd, trackT * track )
 {
 	char buf[BUFSIZE];
 	memset( track, 0x00, sizeof(trackT));
@@ -18,7 +18,7 @@ void LoadTrack ( void * fd, trackT * track )
 	while( Sys_FileReadLine( fd, buf, BUFSIZE) ){
 		if( strncmp( buf, "v ", 2 ) == 0 ){ // Save Vertices
 			vectorT vertex;
-			sscanf( buf, "v %f %f %f\n", &vertex.x, &vertex.y, &vertex.z );
+			sscanf( buf, "v %f %f %f\n", &vertex.x, &vertex.z, &vertex.y );
 			DYN_PUSH( vectorT, tmpVecs, vertex)
 			
 		}else if( strncmp( buf, "l ", 2 ) == 0 ){
@@ -37,13 +37,8 @@ void LoadTrack ( void * fd, trackT * track )
 			track->Vertices = Sys_Realloc( track->Vertices, track->numVertices * sizeof( vectorT ));
 			track->Vertices[track->numVertices-1] = to;
 			
-			
 			//Measure distance and add it to the Length
-			
-			double xSqr = (from.x - to.x) * (from.x - to.x);
-			double ySqr = (from.y - to.y) * (from.y - to.y);
-			double zSqr = (from.z - to.z) * (from.z - to.z);
-			track->Length += sqrt(xSqr + ySqr + zSqr);
+			track->Length += VEC_DISTANCE( from, to);
 		}
 	}
 	Sys_Printf("Length: %f\n", track->Length);
@@ -71,4 +66,38 @@ int Map_Load ( char * path )
 		}
 	}
 	return 0;
+}
+
+void Map_GetStartingPos( vectorT * target, uint index)
+{
+	*target = map.Tracks[0]->Vertices[0];
+}
+
+uint Map_ToFrame( vectorT target, uint numVideoFrames)
+{
+	// 1. Search closest line to our Target and the line position on the track(set of lines)
+	vectorT * Vertices = map.Tracks[0]->Vertices;
+	uint numVertices = map.Tracks[0]->numVertices;
+	float minDistance;
+	uint minDistanceIndex;
+	double minDistanceLength = 0.0;
+	double length = 0.0;
+	
+	minDistance = line_to_vec_distance( Vertices[0], Vertices[1], target);
+	minDistanceIndex = 1;
+	for (uint n = 1; n<numVertices; n++ ){
+		length += VEC_DISTANCE( Vertices[n-1], Vertices[n]);
+		float Distance = line_to_vec_distance( Vertices[n-1], Vertices[n], target);
+		if(Distance < minDistance){
+			minDistanceLength = length;
+			minDistance = Distance;
+			minDistanceIndex = n;
+		}
+	}
+	
+	// 2. Add the distance on the line to it
+	minDistanceLength += line_to_vec_projection( Vertices[minDistanceIndex-1], Vertices[minDistanceIndex], target) * VEC_DISTANCE( Vertices[minDistanceIndex-1], Vertices[minDistanceIndex] );
+	
+	// 3. Calculate frame number
+	return minDistanceLength * ( numVideoFrames / map.Tracks[0]->Length );
 }

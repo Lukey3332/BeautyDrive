@@ -6,7 +6,7 @@ LIBS=-lm `pkg-config --libs gstreamer-1.0` `pkg-config --libs gstreamer-app-1.0`
 %.o: %.c *.h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-BeautyDrive: sys_sdl.o vid_sdl.o dec_gst.o in_sdl.o game.o key.o map.o
+BeautyDrive: sys_sdl.o vid_sdl.o dec_gst.o in_sdl.o game.o key.o map.o vector.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean

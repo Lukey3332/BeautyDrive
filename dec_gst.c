@@ -7,6 +7,7 @@
 #include "vid.h"
 
 static GstElement* app_sink;
+static GstElement* pipeline;
 static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp);
 static void * background_surf;
 
@@ -17,7 +18,7 @@ void Dec_Init ()
 
 void Dec_LoadBackground (const char * url)
 {
-	GstElement* pipeline = gst_pipeline_new("Background-Pipe");
+	pipeline = gst_pipeline_new("Background-Pipe");
 	GstElement* source;
 	if (url == NULL) {
 		// Using the "video test source"
@@ -41,7 +42,7 @@ void Dec_LoadBackground (const char * url)
 	
 	app_sink = gst_element_factory_make ("appsink", "app_sink");
 	
-	gst_app_sink_set_max_buffers( (GstAppSink*)app_sink, 5);
+	gst_app_sink_set_max_buffers( (GstAppSink*)app_sink, 2);
 	gst_base_sink_set_sync( (GstBaseSink *)app_sink, FALSE);
 	
 	if (app_sink == NULL) {
@@ -82,43 +83,6 @@ void Dec_LoadBackground (const char * url)
 	gst_sample_unref(sample);
 }
 
-void Dec_DrawBackground ()
-{
-	Vid_BlitYUVBuffer(background_surf, 0, 0);
-}
-
-int Dec_Seek (seekT type, int pos)
-{
-	gint64 current;
-	switch(type) {
-		case REWIND:
-			if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH,
-			GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
-				Sys_Error("Seek failed!\n");
-				return 1;
-			}
-		break;
-		
-		case SEEK:
-			if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH,
-			GST_SEEK_TYPE_SET, pos, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
-				Sys_Error("Seek failed!\n");
-				return 1;
-			}
-		break;
-		
-		case DIRECTION:
-			gst_element_query_position (app_sink, GST_FORMAT_DEFAULT, &current);
-			if (!gst_element_seek(app_sink, pos, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH,
-			GST_SEEK_TYPE_SET, current, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
-				Sys_Error("Seek failed!\n");
-				return 1;
-			}
-		break;
-	}
-	return 0;
-}
-
 int Dec_Advance ()
 {
 	GstSample* sample = gst_app_sink_pull_sample((GstAppSink*)app_sink);
@@ -134,6 +98,43 @@ int Dec_Advance ()
 	gst_buffer_unmap (vid_buffer, &data); 
 	
 	gst_sample_unref(sample);
+	return 0;
+}
+
+void Dec_DrawBackground ()
+{
+	Vid_BlitYUVBuffer(background_surf, 0, 0);
+}
+
+int Dec_Seek (seekT type, int pos)
+{
+	gint64 current;
+	switch(type) {
+		case REWIND:
+			if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_BUFFERS, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+			GST_SEEK_TYPE_SET, 0, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
+				Sys_Error("Seek failed!\n");
+				return 1;
+			}
+		break;
+		
+		case SEEK:
+			if (!gst_element_seek(app_sink, 1.0, GST_FORMAT_BUFFERS, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+			GST_SEEK_TYPE_SET, pos, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
+				Sys_Error("Seek failed!\n");
+				return 1;
+			}
+		break;
+		
+		case DIRECTION:
+			gst_element_query_position (app_sink, GST_FORMAT_BUFFERS, &current);
+			if (!gst_element_seek(app_sink, pos, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+			GST_SEEK_TYPE_SET, current, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
+				Sys_Error("Seek failed!\n");
+				return 1;
+			}
+		break;
+	}
 	return 0;
 }
 

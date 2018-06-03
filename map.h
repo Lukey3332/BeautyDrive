@@ -1,5 +1,5 @@
 #include "util.h"
-typedef struct { float x; float y; float z; } vectorT;
+#include "vector.h"
 
 typedef struct {
 	uint numVertices;
@@ -16,5 +16,6 @@ typedef struct {
 	float Width, Weight;
 } mapT;
 
-void LoadTrack ( void * fd, trackT * track );
 int Map_Load ( char * path );
+void Map_GetStartingPos( vectorT * target, uint index);
+uint Map_ToFrame( vectorT target, uint numVideoFrames);
