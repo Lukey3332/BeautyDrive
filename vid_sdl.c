@@ -4,10 +4,6 @@
 #include "sys/param.h"
 #include "vid.h"
 
-#define BASEWIDTH	640
-#define BASEHEIGHT	480
-#define BASEDEPTH	24
-
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 #define rmask 0xff000000
 #define gmask 0x00ff0000

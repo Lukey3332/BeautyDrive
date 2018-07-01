@@ -1,5 +1,9 @@
 #include "util.h"
 
+#define BASEWIDTH	640
+#define BASEHEIGHT	480
+#define BASEDEPTH	24
+
 enum { STREAMING, STATIC };
 
 void Vid_Init ();

@@ -4,10 +4,6 @@
 #include "sys/param.h"
 #include "vid.h"
 
-#define BASEWIDTH	640
-#define BASEHEIGHT	480
-#define BASEDEPTH	24
-
 static SDL_Window * window = NULL;
 static SDL_Renderer * renderer = NULL;
 

@@ -3,12 +3,15 @@
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 #include <string.h>
+#include <math.h>
 #include "sys.h"
 #include "vid.h"
 
+static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp);
 static GstElement* app_sink;
 static GstElement* pipeline;
-static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp);
+static GstBus* bus;
+static uint currentFrame = 1;
 static void * background_surf;
 
 void Dec_Init ()
@@ -19,6 +22,7 @@ void Dec_Init ()
 void Dec_LoadBackground (const char * url)
 {
 	pipeline = gst_pipeline_new("Background-Pipe");
+	bus = gst_element_get_bus (GST_ELEMENT (pipeline));
 	GstElement* source;
 	if (url == NULL) {
 		// Using the "video test source"
@@ -43,7 +47,8 @@ void Dec_LoadBackground (const char * url)
 	app_sink = gst_element_factory_make ("appsink", "app_sink");
 	
 	gst_app_sink_set_max_buffers( (GstAppSink*)app_sink, 2);
-	gst_base_sink_set_sync( (GstBaseSink *)app_sink, FALSE);
+	gst_base_sink_set_sync( (GstBaseSink*)app_sink, FALSE);
+	
 	
 	if (app_sink == NULL) {
 		Sys_Error("Unable to create sink element.\n");
@@ -59,11 +64,17 @@ void Dec_LoadBackground (const char * url)
 		}
 	}
 	
-	if (gst_element_set_state(pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+	if (gst_element_set_state(pipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
 		Sys_Error("Unable to set the pipeline to the playing state.\n");
 	}
 	
-	GstSample* sample = gst_app_sink_pull_sample((GstAppSink*)app_sink);
+	gst_element_get_state (pipeline, NULL, NULL, -1);
+	
+	//gst_element_send_event (pipeline, gst_event_new_step (GST_FORMAT_BUFFERS, 2, 1.0, TRUE, FALSE));
+	//gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_STEP_DONE);
+	//gst_element_get_state (pipeline, NULL, NULL, -1);
+	
+	GstSample* sample = gst_app_sink_pull_preroll((GstAppSink*)app_sink);
 	
 	// Get the frame format.
 	GstCaps * caps = gst_sample_get_caps (sample);
@@ -80,24 +91,43 @@ void Dec_LoadBackground (const char * url)
 	}
 	background_surf = Vid_CreateYUVSurface(width, height, STREAMING);
 	
-	gst_sample_unref(sample);
+	GstBuffer * vid_buffer = gst_sample_get_buffer( sample );
+	GstMapInfo data;
+	gst_buffer_map( vid_buffer, &data, GST_MAP_READ );
+	void * dest_buffer = Vid_GetAndLockYUVBuffer( background_surf );
+	memcpy( dest_buffer, data.data, data.size );
+	Vid_UnlockYUVBuffer( background_surf );
+	gst_buffer_unmap( vid_buffer, &data ); 
+	
+	gst_sample_unref( sample );
 }
 
-int Dec_Advance ()
+int Dec_Update (uint targetFrame)
 {
-	GstSample* sample = gst_app_sink_pull_sample((GstAppSink*)app_sink);
+	GstSample* sample;
+	
+	if( targetFrame == currentFrame ) return 0;
+	
+	if( ((int) targetFrame - (int) currentFrame) < 0 ) return 0;
+	
+	gst_element_send_event (pipeline, gst_event_new_step (GST_FORMAT_BUFFERS, abs(targetFrame - currentFrame), 1.0, TRUE, FALSE));
+	gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_STEP_DONE);
+	gst_element_get_state (pipeline, NULL, NULL, -1);
+	currentFrame = targetFrame;
+	
+	sample = gst_app_sink_pull_preroll( (GstAppSink*)app_sink );
 	
 	if(!sample) return 1;
 	
-	GstBuffer * vid_buffer = gst_sample_get_buffer(sample);
+	GstBuffer * vid_buffer = gst_sample_get_buffer( sample );
 	GstMapInfo data;
-	gst_buffer_map (vid_buffer, &data, GST_MAP_READ);
-	void * dest_buffer = Vid_GetAndLockYUVBuffer(background_surf);
-	memcpy( dest_buffer, data.data, data.size);
-	Vid_UnlockYUVBuffer(background_surf);
-	gst_buffer_unmap (vid_buffer, &data); 
+	gst_buffer_map( vid_buffer, &data, GST_MAP_READ );
+	void * dest_buffer = Vid_GetAndLockYUVBuffer( background_surf );
+	memcpy( dest_buffer, data.data, data.size );
+	Vid_UnlockYUVBuffer( background_surf );
+	gst_buffer_unmap( vid_buffer, &data ); 
 	
-	gst_sample_unref(sample);
+	gst_sample_unref( sample );
 	return 0;
 }
 
@@ -127,7 +157,7 @@ int Dec_Seek (seekT type, int pos)
 		break;
 		
 		case DIRECTION:
-			gst_element_query_position (app_sink, GST_FORMAT_BUFFERS, &current);
+			gst_element_query_position (app_sink, GST_FORMAT_DEFAULT, &current);
 			if (!gst_element_seek(app_sink, pos, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
 			GST_SEEK_TYPE_SET, current, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
 				Sys_Error("Seek failed!\n");

@@ -1,12 +1,12 @@
 CC=gcc
-CFLAGS=-I. -g -O2 `pkg-config --cflags gstreamer-1.0` `pkg-config --cflags sdl2`
+CFLAGS=-I. -g -O0 -Wall -pedantic `pkg-config --cflags gstreamer-1.0` `sdl2-config --cflags`
 
-LIBS=-lm `pkg-config --libs gstreamer-1.0` `pkg-config --libs gstreamer-app-1.0` `pkg-config --libs sdl2`
+LIBS=-lm -lGLU `pkg-config --libs gstreamer-1.0` `pkg-config --libs gstreamer-app-1.0` `sdl2-config --libs`
 
 %.o: %.c *.h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-BeautyDrive: sys_sdl2.o vid_sdl2.o dec_gst.o in_sdl.o game.o key.o
+BeautyDrive: sys_sdl2.o vid_sdl2.o dec_gst.o in_sdl.o game.o key.o map.o vector.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean

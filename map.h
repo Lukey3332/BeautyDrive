@@ -4,6 +4,8 @@
 typedef struct {
 	uint numVertices;
 	vectorT * Vertices;
+	double * cameraModelView;
+	double * cameraProjection;
 	double Length;
 } trackT;
 
@@ -19,3 +21,4 @@ typedef struct {
 int Map_Load ( char * path );
 void Map_GetStartingPos( vectorT * target, uint index);
 uint Map_ToFrame( vectorT target, uint numVideoFrames);
+void Map_Project( vectorT target, vectorT * result);

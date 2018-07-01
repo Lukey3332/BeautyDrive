@@ -4,6 +4,52 @@
 #include "dec.h"
 #include "game.h"
 
+void * Sys_OpenFile (char * path, openT mode)
+{
+	FILE * tmp;
+	switch(mode) {
+		case READ:
+			tmp = fopen(path, "r");
+		break;
+		
+		case WRITE:
+			tmp = fopen(path, "w");
+		break;
+	}
+	
+	return tmp;
+}
+
+void Sys_CloseFile (void * handle)
+{
+	fclose(handle);
+}
+
+//uint Sys_FileRead ( void * handle, void * buf, uint count)
+//{
+	
+//}
+
+void * Sys_FileReadLine ( void * handle, void * buf, uint count)
+{
+	return fgets( buf, count, handle);
+}
+
+void * Sys_Malloc ( SIZE_T size)
+{
+	return malloc( size );
+}
+
+void * Sys_Realloc (void * ptr, SIZE_T size)
+{
+	return realloc( ptr, size);
+}
+
+void Sys_Free (void * ptr)
+{
+	free(ptr);
+}
+
 void Sys_Printf (char *fmt, ...)
 {
 	va_list		argptr;
@@ -53,8 +99,8 @@ void Sys_Quit ()
 
 int main (int argc, char *argv[])
 {
-	sys_params.argc = argc;
-	sys_params.argv = argv;
+	Sys_Args.argc = argc;
+	Sys_Args.argv = argv;
 	Sys_Init();
 	Vid_Init();
 	Dec_Init();
