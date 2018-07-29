@@ -706,17 +706,23 @@ def write_file(filepath, objects, scene,
 
                 subprogress1.leave_substeps("Finished writing geometry of '%s'." % ob_main.name)
             # Export Camera Matrices
+            render = bpy.context.scene.render
+            scene = bpy.context.scene
+            orig_frame = scene.frame_current
             for cam in bpy.data.objects:
                 if cam.type == 'CAMERA':
-                    render = bpy.context.scene.render
                     fw('c %s\n' % cam.name)
-                    # First the modelview Matrix
-                    matrix = cam.matrix_world.inverted()
-                    for x in range(0, 4):
-                        fw('m %.10f %.10f %.10f %.10f\n' % (matrix[x][0], matrix[x][1], matrix[x][2], matrix[x][3]))
+                    # First the Projection Matrix
                     matrix = cam.calc_matrix_camera( render.resolution_x, render.resolution_y, render.pixel_aspect_x, render.pixel_aspect_y )
                     for x in range(0, 4):
                         fw('m %.10f %.10f %.10f %.10f\n' % (matrix[x][0], matrix[x][1], matrix[x][2], matrix[x][3]))
+                    for frame in range(scene.frame_start, scene.frame_end + 1):
+                        scene.frame_set(frame, 0.0)
+                        matrix = cam.matrix_world.inverted()
+                        for x in range(0, 4):
+                            fw('m %.10f %.10f %.10f %.10f\n' % (matrix[x][0], matrix[x][1], matrix[x][2], matrix[x][3]))
+            scene.frame_set(orig_frame, 0.0)
+
             subprogress1.leave_substeps()
 
         subprogress1.step("Finished exporting geometry, now exporting materials")
