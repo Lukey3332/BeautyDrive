@@ -8,11 +8,12 @@
 #include "SDL.h"
 #include "in.h"
 #include "map.h"
+#include "vector.h"
+#include <math.h>
 
 static uint prevTime; //Time of the previous run
-void * car;
-void * point_surf;
-vectorT playerPos, point;
+void * Car_Images[180];
+object Point, Player;
 
 void Game_Init ()
 {
@@ -22,42 +23,61 @@ void Game_Init ()
 	map_key(SDLK_LEFT, CMD_LEFT);
 	map_key(SDLK_RIGHT, CMD_RIGHT);
 	if(Map_Load("../BeautyDrive-data/candy.obj")) Sys_Error("Error in Map_Load!");
-	Map_GetStartingPos(&playerPos, 0);
+	Map_GetStartingPos(&Player, 0);
+	Map_GetStartingPos(&Point, 1);
 	if(Sys_Args.argc==2)
 		Dec_LoadBackground(Sys_Args.argv[1]);
 	else
 		Dec_LoadBackground(NULL);
-	car = Vid_CreateRGBSurface( 10, 10, STATIC);
-	point_surf = Vid_CreateRGBSurface( 20, 20, STATIC);
-	point.x = 10.0;
-	point.y = 0.0;
-	point.z = 1.0;
-	//memset(Vid_GetAndLockRGBBuffer(car), 0xff, 10*20*3);
-	//Vid_UnlockRGBBuffer(car);
+	
+	char buf[128];
+	for( uint n = 0; n<180; n++ ){
+		sprintf( buf, "../BeautyDrive-data/car/%04u.png", n);
+		Car_Images[n] = Map_LoadPNG( buf );
+	}
+	
 	prevTime = Sys_Time();
 }
 
 void Game_Frame ()
 {
-	vectorT car_proj, point_proj;
+	vectorT car_proj, player_orientation, player_angles;
+	vec4_t cam;
 	Sys_Sleep( (uint) MAX( (int) (33-(Sys_Time()-prevTime)), (int) 0) );
 	prevTime = Sys_Time();
 	
 	In_SendEvents();
 	
-	playerPos.x += speed*0.1;
-	playerPos.y += steer*-0.1;
-	uint frame = MAX( 0, (int)Map_ToFrame( playerPos )-20);
-	Map_Project( playerPos, &car_proj, frame );
-	Map_Project( point, &point_proj, frame );
+	vectorT euler = { steer*0.05, 0.0, 0.0 };
+	vec4_t quat;
+	Vec_EulerToQuat( &euler, &quat );
+	Vec_MulQuat( &Player.orientation, &quat );
+	Vec_QuatToEuler( &Player.orientation, &player_orientation );
+	double tmp_mat[16];
+	Vec_IdentityMat( tmp_mat );
+	vectorT tmp_vec = { 0.0, 0.0, 1.0 };
+	Vec_QuatToMat( &Player.orientation, &tmp_mat );
+	Vec_MulVecMat( &tmp_vec, &tmp_mat );
+	Player.pos.x += tmp_vec.x * speed * 0.2;
+	Player.pos.y += tmp_vec.z * speed * 0.2;
+	//Player.pos.x += sin(player_orientation.y)*speed*0.1;
+	//Player.pos.y += cos(player_orientation.y)*speed*0.1;
+	uint frame = MAX( 0, (int)Map_ToFrame( Player.pos )-25 );
+	frame = Dec_Update( frame );
+	Map_Project( Player.pos, &car_proj, frame );
+	Map_CameraOrientation( &cam, frame );
+	Vec_MulQuat( &cam, &Player.orientation );
+	Vec_QuatToEuler( &cam, &player_angles );
 	
-	Sys_Printf( "Frame: %d (X: %f Y: %f Z: %f) \nProjection: %f, %f, %f", frame, playerPos.x, playerPos.y, playerPos.z, car_proj.x, car_proj.y, car_proj.z);
+	Sys_Printf( "Frame: %d (X: %f Y: %f Z: %f) \nAngles: %f, %f, %f", frame, Player.pos.x, Player.pos.y, Player.pos.z, player_orientation.x * (180.0 / M_PI), player_orientation.y * (180.0 / M_PI), player_orientation.z * (180.0 / M_PI));
+	Sys_Printf( "Projection: X: %f Y: %f Z: %f \nAngles: %f, %f, %f", frame, car_proj.x, car_proj.y, car_proj.z, player_angles.x * (180.0 / M_PI), player_angles.y * (180.0 / M_PI), player_angles.z * (180.0 / M_PI));
 	
 	Vid_Blank();
-	if(Dec_Update( frame )) Dec_Seek( REWIND, 0 );
 	Dec_DrawBackground();
-	Vid_BlitRGBBuffer(car, car_proj.x, car_proj.y);
-	Vid_BlitRGBBuffer(point_surf, point_proj.x, point_proj.y);
+	int proj_rotation = (car_proj.x-320)/20;
+	double rotation = 360-(player_angles.z * (180.0 / M_PI)) + proj_rotation;
+	rotation = rotation - floor(rotation / 360) * 360;
+	if(car_proj.z < 1.0) Vid_BlitRGBBuffer(Car_Images[(uint)rotation/2], car_proj.x-160, car_proj.y-200);
 	Vid_Update();
 }
 

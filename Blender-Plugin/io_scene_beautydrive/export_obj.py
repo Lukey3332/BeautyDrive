@@ -705,6 +705,11 @@ def write_file(filepath, objects, scene,
                     ob_main.dupli_list_clear()
 
                 subprogress1.leave_substeps("Finished writing geometry of '%s'." % ob_main.name)
+            # Export Arrows
+            for obj in bpy.data.objects:
+                if obj.type == 'EMPTY':
+                    fw('a %.10f %.10f %.10f %.10f %.10f %.10f %.10f\n' % (obj.matrix_world[0][3], obj.matrix_world[1][3], obj.matrix_world[2][3], obj.rotation_euler.to_quaternion().x, obj.rotation_euler.to_quaternion().y, obj.rotation_euler.to_quaternion().z, obj.rotation_euler.to_quaternion().w) )
+            
             # Export Camera Matrices
             render = bpy.context.scene.render
             scene = bpy.context.scene

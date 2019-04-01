@@ -35,7 +35,9 @@ void * Vid_CreateRGBSurface (uint width, uint height, int update)
 		default:
 			type = SDL_TEXTUREACCESS_STREAMING;
 	}
-	return SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ARGB8888, type, width, height );
+	SDL_Texture * ret = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ARGB8888, type, width, height );
+	SDL_SetTextureBlendMode( ret, SDL_BLENDMODE_BLEND);
+	return ret;
 }
 
 void * Vid_CreateYUVSurface (uint width, uint height, int update)

@@ -5,5 +5,5 @@ void Dec_Init ();
 void Dec_LoadBackground ( const char * url );
 void Dec_DrawBackground ();
 int Dec_Seek ( seekT type, int pos );
-int Dec_Update ( uint frame );
+uint Dec_Update ( uint frame );
 void Dec_Shutdown ();

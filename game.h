@@ -1,4 +1,5 @@
 #define GAME_NAME "BeautyDrive"
+
 enum {
 	CMD_ACCEL,
 	CMD_BRAKE,

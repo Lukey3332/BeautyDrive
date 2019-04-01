@@ -2,9 +2,11 @@
 #include "sys.h"
 #include "util.h"
 #include "vid.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <png.h>
 
 #define BUFSIZE 256
 char buf[BUFSIZE];
@@ -62,6 +64,7 @@ int Map_Load ( char * path )
 	file = Sys_OpenFile( path, READ);
 	
 	if(!file) return 1;
+	map.numStarts = 0;
 	
 	while( Sys_FileReadLine( file, buf, BUFSIZE) ){
 		switch(buf[0]) {
@@ -84,15 +87,27 @@ int Map_Load ( char * path )
 
 				// Then load the ModelView Matrix Frame by frame
 				uint count = 1;
-				double ** ptr = Sys_Malloc( count * sizeof(double*) );
-				ptr[count-1] = Sys_Malloc( 4 * 4 * sizeof(double) );
-				while( !LoadMatrix( file, ptr[count-1] ) ) {
+				double ** cptr = Sys_Malloc( count * sizeof(double*) );
+				cptr[count-1] = Sys_Malloc( 4 * 4 * sizeof(double) );
+				while( !LoadMatrix( file, cptr[count-1] ) ) {
 					count++;
-					ptr = Sys_Realloc( ptr, count * sizeof(double*) );
-					ptr[count-1] = Sys_Malloc( 4 * 4 * sizeof(double) );
+					cptr = Sys_Realloc( cptr, count * sizeof(double*) );
+					cptr[count-1] = Sys_Malloc( 4 * 4 * sizeof(double) );
 				}
-				map.Tracks[map.numTracks-1]->cameraModelViewMatrices = ptr;
+				map.Tracks[map.numTracks-1]->cameraModelViewMatrices = cptr;
 				map.Tracks[map.numTracks-1]->numFrames = count;
+			break;
+			
+			case 'a':
+				if(map.numStarts == 0) {
+					map.numStarts = 1;
+					map.Starts = Sys_Malloc( sizeof(object) );
+				} else {
+					map.numStarts++;
+					map.Starts = Sys_Realloc( map.Starts, map.numStarts * sizeof(object) );
+				}
+				object * aptr = &map.Starts[map.numStarts-1];
+				sscanf( buf, "a %f %f %f %f %f %f %f", &aptr->pos.x, &aptr->pos.y, &aptr->pos.z, &aptr->orientation.x, &aptr->orientation.y, &aptr->orientation.z, &aptr->orientation.w );
 			break;
 		}
 	}
@@ -111,9 +126,9 @@ int Map_Load ( char * path )
 	return 0;
 }
 
-void Map_GetStartingPos( vectorT * target, uint index)
+void Map_GetStartingPos( object * target, uint index)
 {
-	*target = map.Tracks[0]->Vertices[0];
+	*target = map.Starts[index];
 }
 
 uint Map_ToFrame( vectorT target)
@@ -145,7 +160,8 @@ uint Map_ToFrame( vectorT target)
 	return MAX( 0, MIN( (int) map.Tracks[0]->numFrames, (int) ( (double) minDistanceLength * ( (double) map.Tracks[0]->numFrames / (double) map.Tracks[0]->Length ) ) ) );
 }
 
-void Map_Project( vectorT target, vectorT * result, uint frame){
+void Map_Project( vectorT target, vectorT * result, uint frame)
+{
 	uint index = MIN( frame, map.Tracks[0]->numFrames );
 	int viewport[4] = { 0, 0, BASEWIDTH, BASEHEIGHT };
 	double x, y, z;
@@ -153,4 +169,61 @@ void Map_Project( vectorT target, vectorT * result, uint frame){
 	result->x = x;
 	result->y = BASEHEIGHT-y;
 	result->z = z;
+}
+
+int Map_CameraOrientation( vec4_t * result, uint frame)
+{
+	uint index = MIN( frame, map.Tracks[0]->numFrames );
+	int ret = Vec_MatrixToAxisAngle( map.Tracks[0]->cameraModelViewMatrices[index], result );
+	Vec_AxisAngleToQuaternion( result );
+	return ret;
+}
+
+void * Map_LoadPNG( char * filename )
+{
+	int width, height;
+	png_byte color_type, bit_depth;
+	png_bytep *row_pointers;
+	
+	void * fd = Sys_OpenFile( filename, READ);
+	
+	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if(!png) abort();
+	
+	png_infop info = png_create_info_struct(png);
+	if(!info) abort();
+	
+	if(setjmp(png_jmpbuf(png))) abort();
+	
+	png_init_io(png, fd);
+	
+	png_read_info(png, info);
+	
+	width = png_get_image_width(png, info);
+	height = png_get_image_height(png, info);
+	color_type = png_get_color_type(png, info);
+	bit_depth = png_get_bit_depth(png, info);
+	
+	if(color_type != PNG_COLOR_TYPE_RGBA ) abort();
+	
+	if(png_get_valid(png, info, PNG_INFO_tRNS))
+		png_set_tRNS_to_alpha(png);
+	
+	void * surface = Vid_CreateRGBSurface( width, height, STREAMING);
+	void * buf = Vid_GetAndLockRGBBuffer( surface );
+	
+	png_read_update_info(png, info);
+	
+	row_pointers = (png_bytep*)Sys_Malloc(sizeof(png_bytep) * height);
+	for(int y = 0; y < height; y++) {
+		row_pointers[y] = buf+(width*4*y);
+	}
+	
+	png_read_image(png, row_pointers);
+	
+	Vid_UnlockRGBBuffer( surface );
+	
+	Sys_CloseFile( fd );
+	
+	return surface;
 }

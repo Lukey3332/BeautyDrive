@@ -2,6 +2,11 @@
 #include "vector.h"
 
 typedef struct {
+	vectorT pos;
+	vec4_t orientation;
+} object;
+
+typedef struct {
 	uint numFrames;
 	uint numVertices;
 	vectorT * Vertices;
@@ -14,12 +19,14 @@ typedef struct {
 	uint numTracks; // a map can have multiple tracks for branches, scripted events, etc.
 	trackT ** Tracks;
 	uint numStarts; // also multiple starts for variation
-	vectorT ** Starts;
+	object * Starts;
 	vectorT Source; // where is the top left corner of our map
 	float Width, Weight;
 } mapT;
 
 int Map_Load ( char * path );
-void Map_GetStartingPos( vectorT * target, uint index );
+void Map_GetStartingPos( object * target, uint index );
 uint Map_ToFrame( vectorT target );
 void Map_Project( vectorT target, vectorT * result, uint frame );
+int Map_CameraOrientation( vec4_t * result, uint frame);
+void * Map_LoadPNG( char * filename );

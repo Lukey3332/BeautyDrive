@@ -102,13 +102,17 @@ void Dec_LoadBackground (const char * url)
 	gst_sample_unref( sample );
 }
 
-int Dec_Update (uint targetFrame)
+uint Dec_Update (uint targetFrame)
 {
 	GstSample* sample;
 	
-	if( targetFrame == currentFrame ) return 0;
+	//gint64 current;
+	//gst_element_query_position (pipeline, GST_FORMAT_TIME, &current);
+	//Sys_Printf("Bytes: %u", current);
 	
-	if( ((int) targetFrame - (int) currentFrame) < 0 ) return 0;
+	if( targetFrame == currentFrame ) return currentFrame;
+	
+	if( ((int) targetFrame - (int) currentFrame) < 0 ) return currentFrame;
 	
 	gst_element_send_event (pipeline, gst_event_new_step (GST_FORMAT_BUFFERS, abs(targetFrame - currentFrame), 1.0, TRUE, FALSE));
 	gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_STEP_DONE);
@@ -117,7 +121,7 @@ int Dec_Update (uint targetFrame)
 	
 	sample = gst_app_sink_pull_preroll( (GstAppSink*)app_sink );
 	
-	if(!sample) return 1;
+	if(!sample) return currentFrame;
 	
 	GstBuffer * vid_buffer = gst_sample_get_buffer( sample );
 	GstMapInfo data;
@@ -128,7 +132,7 @@ int Dec_Update (uint targetFrame)
 	gst_buffer_unmap( vid_buffer, &data ); 
 	
 	gst_sample_unref( sample );
-	return 0;
+	return currentFrame;
 }
 
 void Dec_DrawBackground ()
@@ -157,8 +161,8 @@ int Dec_Seek (seekT type, int pos)
 		break;
 		
 		case DIRECTION:
-			gst_element_query_position (app_sink, GST_FORMAT_DEFAULT, &current);
-			if (!gst_element_seek(app_sink, pos, GST_FORMAT_DEFAULT, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
+			gst_element_query_position (app_sink, GST_FORMAT_TIME, &current);
+			if (!gst_element_seek(app_sink, pos, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE,
 			GST_SEEK_TYPE_SET, current, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE)) {
 				Sys_Error("Seek failed!\n");
 				return 1;
