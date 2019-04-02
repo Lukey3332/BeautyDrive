@@ -13,6 +13,7 @@ static GstElement* pipeline;
 static GstBus* bus;
 static uint currentFrame = 1;
 static surface * background_surf;
+static int blit_scaled = 0;
 
 void Dec_Init ()
 {
@@ -91,6 +92,11 @@ void Dec_LoadBackground (const char * url)
 	}
 	background_surf = Vid_CreateSurface( YUV, 0, width, height);
 	
+	if( abs(width - BASEWIDTH) > 10 || abs(height - BASEHEIGHT) > 10 )
+		blit_scaled = 1;
+	else
+		blit_scaled = 0;
+	
 	GstBuffer * vid_buffer = gst_sample_get_buffer( sample );
 	GstMapInfo data;
 	gst_buffer_map( vid_buffer, &data, GST_MAP_READ );
@@ -137,7 +143,8 @@ uint Dec_Update (uint targetFrame)
 
 void Dec_DrawBackground ()
 {
-	Vid_BlitBuffer( YUV, background_surf, 0, 0);
+	if(blit_scaled) Vid_BlitBufferScaled( YUV, background_surf, 0, 0, BASEWIDTH, BASEHEIGHT);
+	else Vid_BlitBuffer( YUV, background_surf, 0, 0);
 }
 
 int Dec_Seek (seekT type, int pos)
