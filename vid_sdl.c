@@ -30,61 +30,76 @@ void Vid_Init ()
 	SDL_ShowCursor(0);
 }
 
-void * Vid_CreateRGBSurface (uint width, uint height, int update)
+surface * Vid_CreateSurface (int format, int features, uint width, uint height)
 {
-	return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, BASEDEPTH, rmask, gmask, bmask, amask);
+	switch(format) {
+		case RGB:
+			return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 24, rmask, gmask, bmask, 0x00000000);
+		break;
+		case ARGB:
+			return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 32, rmask, gmask, bmask, amask);
+		break;
+		case YUV:
+			return SDL_CreateYUVOverlay(width, height, SDL_IYUV_OVERLAY, screen);
+		break;
+		
+		default:
+			abort();
+	}
 }
 
-void * Vid_CreateYUVSurface (uint width, uint height, int update)
+surface * Vid_GetAndLockBuffer (int format, surface * ref)
 {
-	return SDL_CreateYUVOverlay(width, height, SDL_IYUV_OVERLAY, screen);
+	if( format != YUV ) {
+		SDL_Surface * tmp_surf = ref;
+		SDL_LockSurface(tmp_surf);
+		return tmp_surf->pixels;
+	} else {
+		SDL_Overlay * tmp_ovl = ref;
+		SDL_LockYUVOverlay(tmp_ovl);
+		return *tmp_ovl->pixels;
+	}
 }
 
-void * Vid_GetAndLockRGBBuffer (void * ref)
+void Vid_UnlockBuffer (int format, surface * ref)
 {
-	SDL_Surface * tmp = ref;
-	SDL_LockSurface(tmp);
-	return tmp->pixels;
+	if( format != YUV ) {
+		SDL_UnlockSurface((SDL_Surface *) ref);
+	} else {
+		SDL_UnlockYUVOverlay((SDL_Overlay *) ref);
+	}
 }
 
-void * Vid_GetAndLockYUVBuffer (void * ref)
+void Vid_BlitBuffer(int format, surface * ref, uint x, uint y)
 {
-	SDL_Overlay * tmp = ref;
-	SDL_LockYUVOverlay(tmp);
-	return *tmp->pixels;
+	if( format != YUV ) {
+		SDL_Surface * tmp_surf = ref;
+		SDL_Rect target = { x, y, tmp_surf->w, tmp_surf->h};
+		SDL_BlitSurface(tmp_surf, NULL, screen, &target);
+	} else {
+		SDL_Overlay * tmp_ovl = ref;
+		SDL_Rect overlaytarget = { x, y, tmp_ovl->w, tmp_ovl->h};
+		SDL_DisplayYUVOverlay(tmp_ovl, &overlaytarget);
+	}
 }
 
-void Vid_UnlockRGBBuffer (void * ref)
+void Vid_BlitBufferScaled(int format, surface * ref, uint x, uint y, uint w, uint h)
 {
-	SDL_Surface * tmp = ref;
-	SDL_UnlockSurface(tmp);
-}
-
-void Vid_UnlockYUVBuffer (void * ref)
-{
-	SDL_Overlay * tmp = ref;
-	SDL_UnlockYUVOverlay(tmp);
-}
-
-void Vid_BlitRGBBuffer(void * ref, uint x, uint y)
-{
-	SDL_Surface * tmp = ref;
-	//SDL_Rect source = { 0, 0, tmpsurf->w, tmpsurf->h};
-	SDL_Rect target = { x, y, tmp->w, tmp->h};
-	SDL_BlitSurface(tmp, NULL, screen, &target);
-}
-
-void Vid_BlitYUVBuffer(void * ref, uint x, uint y)
-{
-	SDL_Overlay * tmp = ref;
-	SDL_Rect overlaytarget = { x, y, tmp->w, tmp->h};
-	SDL_DisplayYUVOverlay(tmp, &overlaytarget);
+	if( format != YUV ) {
+		SDL_Surface * tmp_surf = ref;
+		SDL_Rect target = { x, y, tmp_surf->w, tmp_surf->h};
+		SDL_BlitSurface(tmp_surf, NULL, screen, &target);
+	} else {
+		SDL_Overlay * tmp_ovl = ref;
+		SDL_Rect overlaytarget = { x, y, tmp_ovl->w, tmp_ovl->h};
+		SDL_DisplayYUVOverlay(tmp_ovl, &overlaytarget);
+	}
 }
 
 void Vid_Blank()
 {
 	SDL_UnlockSurface(screen);
-	memset(screen->pixels, 0x00, BASEWIDTH*BASEHEIGHT*3);
+	memset(screen->pixels, 0x00, BASEWIDTH*BASEHEIGHT*(BASEDEPTH/8));
 }
 
 void Vid_Update ()

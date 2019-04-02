@@ -1,5 +1,6 @@
 #include "util.h"
 #include "vector.h"
+#include "vid.h"
 
 typedef struct {
 	vectorT pos;
@@ -29,4 +30,4 @@ void Map_GetStartingPos( object * target, uint index );
 uint Map_ToFrame( vectorT target );
 void Map_Project( vectorT target, vectorT * result, uint frame );
 int Map_CameraOrientation( vec4_t * result, uint frame);
-void * Map_LoadPNG( char * filename );
+surface * Map_LoadPNG( char * filename );

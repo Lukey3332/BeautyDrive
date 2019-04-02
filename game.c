@@ -12,7 +12,7 @@
 #include <math.h>
 
 static uint prevTime; //Time of the previous run
-void * Car_Images[180];
+surface * Car_Images[180];
 object Point, Player;
 
 void Game_Init ()
@@ -62,7 +62,7 @@ void Game_Frame ()
 	Player.pos.y += tmp_vec.z * speed * 0.2;
 	//Player.pos.x += sin(player_orientation.y)*speed*0.1;
 	//Player.pos.y += cos(player_orientation.y)*speed*0.1;
-	uint frame = MAX( 0, (int)Map_ToFrame( Player.pos )-25 );
+	uint frame = MAX( 0, (int)Map_ToFrame( Player.pos ) );
 	frame = Dec_Update( frame );
 	Map_Project( Player.pos, &car_proj, frame );
 	Map_CameraOrientation( &cam, frame );
@@ -75,9 +75,12 @@ void Game_Frame ()
 	Vid_Blank();
 	Dec_DrawBackground();
 	int proj_rotation = (car_proj.x-320)/20;
-	double rotation = 360-(player_angles.z * (180.0 / M_PI)) + proj_rotation;
-	rotation = rotation - floor(rotation / 360) * 360;
-	if(car_proj.z < 1.0) Vid_BlitRGBBuffer(Car_Images[(uint)rotation/2], car_proj.x-160, car_proj.y-200);
+	double rotation = 360.0-(player_angles.z * (180.0 / M_PI)) + proj_rotation;
+	rotation = rotation - floor(rotation / 360.0) * 360.0;
+	
+	double adjusted_z = 1.0 - car_proj.z;
+	adjusted_z *= 40.0;
+	if(car_proj.z < 1.0) Vid_BlitBufferScaled( ARGB, Car_Images[(uint)rotation/2], car_proj.x-160, car_proj.y-200, 320 * adjusted_z, 240 * adjusted_z);
 	Vid_Update();
 }
 

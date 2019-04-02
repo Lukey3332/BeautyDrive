@@ -17,6 +17,6 @@ void In_SendEvents ()
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
-		HandleKey(event.key.keysym.sym, (event.key.type == SDL_KEYDOWN ? 1 : 0));
+		HandleKey(event.key.keysym.sym, (event.type == SDL_KEYDOWN ? 1 : 0));
 	}
 }

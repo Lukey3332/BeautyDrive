@@ -95,7 +95,7 @@ int Map_Load ( char * path )
 					cptr[count-1] = Sys_Malloc( 4 * 4 * sizeof(double) );
 				}
 				map.Tracks[map.numTracks-1]->cameraModelViewMatrices = cptr;
-				map.Tracks[map.numTracks-1]->numFrames = count;
+				map.Tracks[map.numTracks-1]->numFrames = count-1;
 			break;
 			
 			case 'a':
@@ -154,7 +154,7 @@ uint Map_ToFrame( vectorT target)
 	}
 	
 	// 2. Add the distance on the line to it
-	minDistanceLength += Vec_LineToVecProjection( Vertices[minDistanceIndex-1], Vertices[minDistanceIndex], target) * VEC_DISTANCE( Vertices[minDistanceIndex-1], Vertices[minDistanceIndex] );
+	if(minDistanceIndex+1 < numVertices) minDistanceLength += Vec_LineToVecProjection( Vertices[minDistanceIndex], Vertices[minDistanceIndex+1], target) * VEC_DISTANCE( Vertices[minDistanceIndex], Vertices[minDistanceIndex+1] );
 	
 	// 3. Calculate frame number
 	return MAX( 0, MIN( (int) map.Tracks[0]->numFrames, (int) ( (double) minDistanceLength * ( (double) map.Tracks[0]->numFrames / (double) map.Tracks[0]->Length ) ) ) );
@@ -162,7 +162,7 @@ uint Map_ToFrame( vectorT target)
 
 void Map_Project( vectorT target, vectorT * result, uint frame)
 {
-	uint index = MIN( frame, map.Tracks[0]->numFrames );
+	uint index = MIN( frame-1, map.Tracks[0]->numFrames-1 );
 	int viewport[4] = { 0, 0, BASEWIDTH, BASEHEIGHT };
 	double x, y, z;
 	Vec_Project( target, &x, &y, &z, map.Tracks[0]->cameraModelViewMatrices[index], map.Tracks[0]->cameraProjectionMatrix, &viewport);
@@ -173,13 +173,13 @@ void Map_Project( vectorT target, vectorT * result, uint frame)
 
 int Map_CameraOrientation( vec4_t * result, uint frame)
 {
-	uint index = MIN( frame, map.Tracks[0]->numFrames );
+	uint index = MIN( frame-1, map.Tracks[0]->numFrames-1 );
 	int ret = Vec_MatrixToAxisAngle( map.Tracks[0]->cameraModelViewMatrices[index], result );
 	Vec_AxisAngleToQuaternion( result );
 	return ret;
 }
 
-void * Map_LoadPNG( char * filename )
+surface * Map_LoadPNG( char * filename )
 {
 	int width, height;
 	png_byte color_type, bit_depth;
@@ -209,8 +209,8 @@ void * Map_LoadPNG( char * filename )
 	if(png_get_valid(png, info, PNG_INFO_tRNS))
 		png_set_tRNS_to_alpha(png);
 	
-	void * surface = Vid_CreateRGBSurface( width, height, STREAMING);
-	void * buf = Vid_GetAndLockRGBBuffer( surface );
+	surface * surf = Vid_CreateSurface( ARGB, BLEND_ALPHA, width, height );
+	surface * buf = Vid_GetAndLockBuffer( ARGB, surf );
 	
 	png_read_update_info(png, info);
 	
@@ -221,9 +221,9 @@ void * Map_LoadPNG( char * filename )
 	
 	png_read_image(png, row_pointers);
 	
-	Vid_UnlockRGBBuffer( surface );
+	Vid_UnlockBuffer( ARGB, surf );
 	
 	Sys_CloseFile( fd );
 	
-	return surface;
+	return surf;
 }

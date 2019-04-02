@@ -20,75 +20,47 @@ void Vid_Init ()
 	SDL_ShowCursor(0);
 }
 
-void * Vid_CreateRGBSurface (uint width, uint height, int update)
+surface * Vid_CreateSurface (int format, int features, uint width, uint height)
 {
-	int type;
-	switch(update) {
-		case STATIC:
-			type = SDL_TEXTUREACCESS_STATIC;
+	int sdl_format;
+	switch(format) {
+		case RGB:
+			sdl_format = SDL_PIXELFORMAT_RGB888;
 		break;
-		
-		case STREAMING:
-			type = SDL_TEXTUREACCESS_STREAMING;
+		case ARGB:
+			sdl_format = SDL_PIXELFORMAT_ARGB8888;
+		break;
+		case YUV:
+			sdl_format = SDL_PIXELFORMAT_IYUV;
 		break;
 		
 		default:
-			type = SDL_TEXTUREACCESS_STREAMING;
+			abort();
 	}
-	SDL_Texture * ret = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ARGB8888, type, width, height );
-	SDL_SetTextureBlendMode( ret, SDL_BLENDMODE_BLEND);
-	return ret;
+	int sdl_update = 0;
+	if( features & UPDATE_STATIC ) sdl_update = SDL_TEXTUREACCESS_STATIC;
+	else sdl_update = SDL_TEXTUREACCESS_STREAMING;
+	SDL_Texture * texture = SDL_CreateTexture( renderer, sdl_format, sdl_update, width, height );
+	if( features & BLEND_ALPHA || features & BLEND_KEY ) SDL_SetTextureBlendMode( texture, SDL_BLENDMODE_BLEND);
+	return texture;
 }
 
-void * Vid_CreateYUVSurface (uint width, uint height, int update)
-{
-	int type;
-	switch(update) {
-		case STATIC:
-			type = SDL_TEXTUREACCESS_STATIC;
-		break;
-		
-		case STREAMING:
-			type = SDL_TEXTUREACCESS_STREAMING;
-		break;
-		
-		default:
-			type = SDL_TEXTUREACCESS_STREAMING;
-	}
-	return SDL_CreateTexture( renderer, SDL_PIXELFORMAT_IYUV, type, width, height );
-}
-
-void * Vid_GetAndLockRGBBuffer (void * ref)
+surface * Vid_GetAndLockBuffer (int format, surface * ref)
 {
 	SDL_Texture * tmp = ref;
-	void * ret;
+	surface * ret;
 	int discard;
 	SDL_LockTexture(tmp, NULL, &ret, &discard);
 	return ret;
 }
 
-void * Vid_GetAndLockYUVBuffer (void * ref)
-{
-	SDL_Texture * tmp = ref;
-	void * ret;
-	int discard;
-	SDL_LockTexture(tmp, NULL, &ret, &discard);
-	return ret;
-}
-
-void Vid_UnlockRGBBuffer (void * ref)
+void Vid_UnlockBuffer (int format, surface * ref)
 {
 	SDL_Texture * tmp = ref;
 	SDL_UnlockTexture(tmp);
 }
 
-void Vid_UnlockYUVBuffer (void * ref)
-{
-	SDL_Texture * tmp = ref;
-	SDL_UnlockTexture(tmp);
-}
-
-void Vid_BlitRGBBuffer(void * ref, uint x, uint y)
+void Vid_BlitBuffer (int format, surface * ref, uint x, uint y)
 {
 	SDL_Texture * tmp = ref;
 	int w, h;
@@ -97,16 +69,14 @@ void Vid_BlitRGBBuffer(void * ref, uint x, uint y)
 	SDL_RenderCopy(renderer, tmp, NULL, &target);
 }
 
-void Vid_BlitYUVBuffer(void * ref, uint x, uint y)
+void Vid_BlitBufferScaled (int format, surface * ref, uint x, uint y, uint w, uint h)
 {
 	SDL_Texture * tmp = ref;
-	int w, h;
-	SDL_QueryTexture( tmp, NULL, NULL, &w, &h);
 	SDL_Rect target = { x, y, w, h};
 	SDL_RenderCopy(renderer, tmp, NULL, &target);
 }
 
-void Vid_Blank()
+void Vid_Blank ()
 {
 	SDL_RenderClear(renderer);
 }

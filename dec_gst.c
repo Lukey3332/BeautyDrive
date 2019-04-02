@@ -12,7 +12,7 @@ static GstElement* app_sink;
 static GstElement* pipeline;
 static GstBus* bus;
 static uint currentFrame = 1;
-static void * background_surf;
+static surface * background_surf;
 
 void Dec_Init ()
 {
@@ -89,14 +89,14 @@ void Dec_LoadBackground (const char * url)
 	if (!res) {
 		Sys_Error("could not get snapshot dimension\n");
 	}
-	background_surf = Vid_CreateYUVSurface(width, height, STREAMING);
+	background_surf = Vid_CreateSurface( YUV, 0, width, height);
 	
 	GstBuffer * vid_buffer = gst_sample_get_buffer( sample );
 	GstMapInfo data;
 	gst_buffer_map( vid_buffer, &data, GST_MAP_READ );
-	void * dest_buffer = Vid_GetAndLockYUVBuffer( background_surf );
+	void * dest_buffer = Vid_GetAndLockBuffer( YUV, background_surf );
 	memcpy( dest_buffer, data.data, data.size );
-	Vid_UnlockYUVBuffer( background_surf );
+	Vid_UnlockBuffer( YUV, background_surf );
 	gst_buffer_unmap( vid_buffer, &data ); 
 	
 	gst_sample_unref( sample );
@@ -126,9 +126,9 @@ uint Dec_Update (uint targetFrame)
 	GstBuffer * vid_buffer = gst_sample_get_buffer( sample );
 	GstMapInfo data;
 	gst_buffer_map( vid_buffer, &data, GST_MAP_READ );
-	void * dest_buffer = Vid_GetAndLockYUVBuffer( background_surf );
+	void * dest_buffer = Vid_GetAndLockBuffer( YUV, background_surf );
 	memcpy( dest_buffer, data.data, data.size );
-	Vid_UnlockYUVBuffer( background_surf );
+	Vid_UnlockBuffer( YUV, background_surf );
 	gst_buffer_unmap( vid_buffer, &data ); 
 	
 	gst_sample_unref( sample );
@@ -137,7 +137,7 @@ uint Dec_Update (uint targetFrame)
 
 void Dec_DrawBackground ()
 {
-	Vid_BlitYUVBuffer(background_surf, 0, 0);
+	Vid_BlitBuffer( YUV, background_surf, 0, 0);
 }
 
 int Dec_Seek (seekT type, int pos)
