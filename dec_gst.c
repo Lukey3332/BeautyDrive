@@ -190,9 +190,6 @@ static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp)
 	GstCaps *new_pad_caps = NULL;
 	GstStructure *new_pad_struct = NULL;
 	const gchar *new_pad_type = NULL;
-
-	g_print ("Received new pad '%s' from '%s':\n", GST_PAD_NAME (new_pad), GST_ELEMENT_NAME (src));
-
 	/* Check the new pad's type */
 	new_pad_caps = gst_pad_get_current_caps (new_pad);
 	new_pad_struct = gst_caps_get_structure (new_pad_caps, 0);
@@ -205,15 +202,12 @@ static void pad_added_handler (GstElement *src, GstPad *new_pad, void * tmp)
 		GstPad *sink_pad_video = gst_element_get_static_pad (app_sink, "sink");
 		ret = gst_pad_link (new_pad, sink_pad_video);
 		if (GST_PAD_LINK_FAILED (ret)) {
-			g_print ("  Type is '%s' but link failed.\n", new_pad_type);
-		} else {
-			g_print ("  Link succeeded (type '%s').\n", new_pad_type);
-		} 
+			Sys_Error("  Type is '%s' but link failed.\n", new_pad_type);
+		}
 		
 		/* Unreference the sink pad */
 		gst_object_unref (sink_pad_video);
 	} else {
-		g_print ("  It has type '%s' which is not raw audio. Ignoring.\n", new_pad_type);
 		gst_caps_unref (new_pad_caps);
 	}
 }
