@@ -127,7 +127,7 @@ void Vec_QuatToEuler( vec4_t * q, vectorT * result )
 {
 	double sinr = 2.0 * (q->w * q->x + q->y * q->z);
 	double cosr = 1.0 - 2.0 * (q->x * q->x + q->y * q->y);
-	result->x = atan2(sinr, cosr);
+	result->z = atan2(sinr, cosr);
 
 	// pitch (y-axis rotation)
 	double sinp = 2.0 * (q->w * q->y - q->z * q->x);
@@ -139,16 +139,16 @@ void Vec_QuatToEuler( vec4_t * q, vectorT * result )
 	// yaw (z-axis rotation)
 	double siny = 2.0 * (q->w * q->z + q->x * q->y);
 	double cosy = 1.0 - 2.0 * (q->y * q->y + q->z * q->z);  
-	result->z = atan2(siny, cosy);
+	result->x = atan2(siny, cosy);
 }
 
 void Vec_EulerToQuat( vectorT * euler, vec4_t * result )
 {
 	// Assuming the angles are in radians.
-	double c1 = cos(euler->x/2);
-	double s1 = sin(euler->x/2);
-	double c2 = cos(euler->y/2);
-	double s2 = sin(euler->y/2);
+	double c1 = cos(euler->y/2);
+	double s1 = sin(euler->y/2);
+	double c2 = cos(euler->x/2);
+	double s2 = sin(euler->x/2);
 	double c3 = cos(euler->z/2);
 	double s3 = sin(euler->z/2);
 	double c1c2 = c1*c2;
@@ -180,6 +180,29 @@ void Vec_NomalizeQuat( vec4_t * q )
 	q->w *= n;
 }
 
+void Vec_InvertQuat( vec4_t * q )
+{
+	const float norm = q->x*q->x+q->y*q->y+q->z*q->z+q->w*q->w;
+	
+	// Prevent Divide by Zero
+	if( norm < 0.001 ){
+		return;
+	}
+	
+	q->x = -q->x;
+	q->y = -q->y;
+	q->z = -q->z;
+	
+	if( norm > 0.999 ){
+		return;
+	}
+	
+	q->x /= norm;
+	q->y /= norm;
+	q->z /= norm;
+	q->w /= norm;
+}
+
 void Vec_QuatToMat( vec4_t * q, double * m )
 {
 	m[M(0,0)] = 1.0 - 2.0*q->y*q->y - 2.0*q->z*q->z;
@@ -198,6 +221,28 @@ void Vec_QuatToMat( vec4_t * q, double * m )
 	m[M(3,1)] = 0.0;
 	m[M(3,2)] = 0.0;
 	m[M(3,3)] = 1.0;
+}
+
+void Vec_MulVecQuat(vectorT * vec, vec4_t * q)
+{
+	float num12 = q->x + q->x;
+	float num2 = q->y + q->y;
+	float num = q->z + q->z;
+	float num11 = q->w * num12;
+	float num10 = q->w * num2;
+	float num9 = q->w * num;
+	float num8 = q->x * num12;
+	float num7 = q->x * num2;
+	float num6 = q->x * num;
+	float num5 = q->y * num2;
+	float num4 = q->y * num;
+	float num3 = q->z * num;
+	float num15 = ((vec->x * ((1.0f - num5) - num3)) + (vec->y * (num7 - num9))) + (vec->z * (num6 + num10));
+	float num14 = ((vec->x * (num7 + num9)) + (vec->y * ((1.0f - num8) - num3))) + (vec->z * (num4 - num11));
+	float num13 = ((vec->x * (num6 - num10)) + (vec->y * (num4 + num11))) + (vec->z * ((1.0f - num8) - num5));
+	vec->x = num15;
+	vec->y = num14;
+	vec->z = num13;
 }
 
 void Vec_AddMat( double * ma, double * mb )

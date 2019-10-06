@@ -18,9 +18,11 @@ void Vec_QuatToEuler( vec4_t * q, vectorT * result );
 void Vec_EulerToQuat( vectorT * euler, vec4_t * result );
 void Vec_MulQuat( vec4_t * a, vec4_t * b );
 void Vec_NomalizeQuat( vec4_t * q );
+void Vec_InvertQuat( vec4_t * q );
 void Vec_QuatToMat( vec4_t * q, double * m );
 void Vec_MulMat( double * ma, double * mb );
 void Vec_MulVecMat( vectorT * vec, double * m );
+void Vec_MulVecQuat(vectorT * vec, vec4_t * q);
 void Vec_IdentityMat( double * m );
 
 #endif

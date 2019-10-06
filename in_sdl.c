@@ -12,11 +12,12 @@ void In_Shutdown ()
 
 }
 
-void In_SendEvents ()
+int In_SendEvents ()
 {
 	SDL_Event event;
-	while (SDL_PollEvent(&event))
-	{
+	int status = SDL_PollEvent(&event);
+	do {
 		HandleKey(event.key.keysym.sym, (event.type == SDL_KEYDOWN ? 1 : 0));
-	}
+	} while (SDL_PollEvent(&event));
+	return status;
 }
