@@ -101,12 +101,12 @@ int Map_Load ( char * path )
 			case 'a':
 				if(map.numStarts == 0) {
 					map.numStarts = 1;
-					map.Starts = Sys_Malloc( sizeof(object) );
+					map.Starts = Sys_Malloc( sizeof(pointT) );
 				} else {
 					map.numStarts++;
-					map.Starts = Sys_Realloc( map.Starts, map.numStarts * sizeof(object) );
+					map.Starts = Sys_Realloc( map.Starts, map.numStarts * sizeof(pointT) );
 				}
-				object * aptr = &map.Starts[map.numStarts-1];
+				pointT * aptr = &map.Starts[map.numStarts-1];
 				sscanf( buf, "a %f %f %f %f %f %f %f", &aptr->pos.x, &aptr->pos.y, &aptr->pos.z, &aptr->orientation.x, &aptr->orientation.y, &aptr->orientation.z, &aptr->orientation.w );
 			break;
 		}
@@ -126,7 +126,7 @@ int Map_Load ( char * path )
 	return 0;
 }
 
-void Map_GetStartingPos( object * target, uint index)
+void Map_GetStartingPos( pointT * target, uint index)
 {
 	*target = map.Starts[index];
 }
@@ -165,7 +165,7 @@ void Map_Project( vectorT target, vectorT * result, uint frame)
 	uint index = MIN( frame-1, map.Tracks[0]->numFrames-1 );
 	int viewport[4] = { 0, 0, BASEWIDTH, BASEHEIGHT };
 	double x, y, z;
-	Vec_Project( target, &x, &y, &z, map.Tracks[0]->cameraModelViewMatrices[index], map.Tracks[0]->cameraProjectionMatrix, &viewport);
+	Vec_Project( target, &x, &y, &z, map.Tracks[0]->cameraModelViewMatrices[index], map.Tracks[0]->cameraProjectionMatrix, (int *)&viewport);
 	result->x = x;
 	result->y = BASEHEIGHT-y;
 	result->z = z;
@@ -226,4 +226,20 @@ surface * Map_LoadPNG( char * filename )
 	Sys_CloseFile( fd );
 	
 	return surf;
+}
+
+void Map_LoadRenderdata( renderdataT * renderdata, char * dirname )
+{
+	renderdata->width = 320;
+	renderdata->height = 240;
+	renderdata->center_x = 160;
+	renderdata->center_y = 192;
+	renderdata->num_images = 180;
+	renderdata->images = malloc( 180 * sizeof(surface *) );
+
+	char buf[128];
+	for( uint n = 0; n<180; n++ ){
+		sprintf( buf, "%s/%04u.png", dirname, n);
+		renderdata->images[n] = Map_LoadPNG( buf );
+	}
 }

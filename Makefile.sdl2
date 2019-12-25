@@ -6,7 +6,7 @@ LIBS=-lm -lGLU -lpng `pkg-config --libs gstreamer-1.0` `pkg-config --libs gstrea
 %.o: %.c *.h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-BeautyDrive: sys_sdl2.o vid_sdl2.o dec_gst.o in_sdl.o game.o key.o map.o vector.o
+BeautyDrive: sys_sdl2.o vid_sdl2.o dec_gst.o in_sdl.o physics_minimal.o renderer.o game.o key.o map.o vector.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
