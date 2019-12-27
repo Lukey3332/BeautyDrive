@@ -7,7 +7,7 @@
 
 void Render_Object ( objectT * obj, vec4_t * cam, uint frame )
 {
-	vectorT angles, projection;
+	vectorT tmp_euler, angles, projection;
 	vec4_t cam_tmp = *cam;
 	vec4_t tmp = obj->point.orientation;
 	uint width = obj->renderdata->width;
@@ -18,6 +18,15 @@ void Render_Object ( objectT * obj, vec4_t * cam, uint frame )
 
 	Map_Project( obj->point.pos, &projection, frame );
 
+
+	Vec_QuatToEuler( &tmp, &tmp_euler );
+	tmp_euler.y = 0.0;
+	tmp_euler.z = 0.0;
+	Vec_EulerToQuat( &tmp_euler, &tmp );
+	Vec_QuatToEuler( &cam_tmp, &tmp_euler );
+	tmp_euler.y = 0.0;
+	tmp_euler.z = 0.0;
+	Vec_EulerToQuat( &tmp_euler, &cam_tmp );
 	Vec_InvertQuat( &cam_tmp );
 	Vec_MulQuat( &tmp, &cam_tmp );
 	Vec_QuatToEuler( &tmp, &angles );
