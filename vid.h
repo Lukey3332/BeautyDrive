@@ -3,7 +3,7 @@
 #ifndef VID_H
 #define VID_H
 
-#define BASEWIDTH	640
+#define BASEWIDTH	800
 #define BASEHEIGHT	480
 #define BASEDEPTH	24
 

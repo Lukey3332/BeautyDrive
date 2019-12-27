@@ -14,7 +14,7 @@
 #include <math.h>
 
 static uint prevTime; //Time of the previous run
-objectT Point, Player;
+objectT Point, Point2, Player;
 
 void Game_Init ()
 {
@@ -23,11 +23,12 @@ void Game_Init ()
 	map_key(SDLK_ESCAPE, CMD_QUIT);
 	map_key(SDLK_LEFT, CMD_LEFT);
 	map_key(SDLK_RIGHT, CMD_RIGHT);
-	if(Map_Load("../BeautyDrive-data/candy.obj")){
+	if(Map_Load("../BeautyDrive-data/lazy.obj")){
 		Sys_Error("Error in Map_Load!");
 	}
 	Map_GetStartingPos(&Player.point, 0);
 	Map_GetStartingPos(&Point.point, 1);
+	Map_GetStartingPos(&Point2.point, 2);
 	if(Sys_Args.argc==2)
 		Dec_LoadBackground(Sys_Args.argv[1]);
 	else
@@ -37,6 +38,7 @@ void Game_Init ()
 	Map_LoadRenderdata( renderdata, "../BeautyDrive-data/car" );
 	Player.renderdata = renderdata;
 	Point.renderdata = renderdata;
+	Point2.renderdata = renderdata;
 	Player.velocity.x = 0.0;
 
 	prevTime = Sys_Time();
@@ -63,7 +65,7 @@ void Game_Frame ()
 	Map_CameraOrientation( &cam, frame );
 	Render_Object( &Player, &cam, frame );
 	Render_Object( &Point, &cam, frame );
-
+	Render_Object( &Point2, &cam, frame );
 	Vid_Update();
 }
 
