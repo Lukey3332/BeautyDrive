@@ -16,6 +16,7 @@ typedef struct {
 
 typedef struct {
 	pointT point;
+	vectorT velocity;
 	renderdataT * renderdata;
 } objectT;
 

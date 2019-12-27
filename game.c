@@ -37,6 +37,7 @@ void Game_Init ()
 	Map_LoadRenderdata( renderdata, "../BeautyDrive-data/car" );
 	Player.renderdata = renderdata;
 	Point.renderdata = renderdata;
+	Player.velocity.x = 0.0;
 
 	prevTime = Sys_Time();
 }
