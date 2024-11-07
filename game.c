@@ -23,7 +23,7 @@ void Game_Init ()
 	map_key(SDLK_ESCAPE, CMD_QUIT);
 	map_key(SDLK_LEFT, CMD_LEFT);
 	map_key(SDLK_RIGHT, CMD_RIGHT);
-	if(Map_Load("../BeautyDrive-data/lazy.obj")){
+	if(Map_Load("data/lazy.obj")){
 		Sys_Error("Error in Map_Load!");
 	}
 	Map_GetStartingPos(&Player.point, 0);
@@ -35,7 +35,7 @@ void Game_Init ()
 		Dec_LoadBackground(NULL);
 
 	renderdataT * renderdata = malloc( sizeof(renderdataT) );
-	Map_LoadRenderdata( renderdata, "../BeautyDrive-data/car" );
+	Map_LoadRenderdata( renderdata, "data/car" );
 	Player.renderdata = renderdata;
 	Point.renderdata = renderdata;
 	Point2.renderdata = renderdata;
