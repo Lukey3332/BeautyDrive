@@ -216,7 +216,7 @@ surface * Map_LoadPNG( char * filename )
 	
 	row_pointers = (png_bytep*)Sys_Malloc(sizeof(png_bytep) * height);
 	for(int y = 0; y < height; y++) {
-		row_pointers[y] = buf+(width*4*y);
+		row_pointers[y] = (png_bytep) buf+(width*4*y);
 	}
 	
 	png_read_image(png, row_pointers);

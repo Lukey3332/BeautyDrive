@@ -17,6 +17,10 @@ void * Sys_OpenFile (char * path, openT mode)
 		case WRITE:
 			tmp = fopen(path, "w");
 		break;
+
+		default:
+			abort();
+		break;
 	}
 	
 	return tmp;
