@@ -7,7 +7,6 @@ enum {
 	CMD_RIGHT,
 	CMD_QUIT
 };
-float speed, steer;
 void Game_Init ();
 void Game_Shutdown ();
 void Game_Frame ();

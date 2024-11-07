@@ -13,6 +13,8 @@ typedef struct {
 
 keysym * keymap = NULL;
 
+float speed, steer;
+
 void map_key (uint keycode, uint command) {
 	keysym * tmp;
 	HASH_FIND_INT( keymap, &keycode, tmp);

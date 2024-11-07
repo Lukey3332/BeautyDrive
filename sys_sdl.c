@@ -5,6 +5,8 @@
 #include "game.h"
 #include <stdio.h>
 
+Sys_ArgsT Sys_Args;
+
 void * Sys_OpenFile (char * path, openT mode)
 {
 	FILE * tmp;

@@ -1,6 +1,8 @@
 #include "util.h"
-struct { int argc; char ** argv;} Sys_Args;
+typedef struct { int argc; char ** argv;} Sys_ArgsT;
 typedef enum { READ, WRITE } openT;
+
+extern Sys_ArgsT Sys_Args;
 
 void * Sys_OpenFile ( char * path, openT mode);
 void Sys_CloseFile ( void * handle);
